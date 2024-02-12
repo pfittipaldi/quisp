@@ -80,6 +80,9 @@ void Router::handleMessage(cMessage *msg) {
     bubble("Timing Notifier from EPPS received");
     send(pk, "rePort$o");  // send to Application locally
     return;
+  } else if (dest_addr == my_address && dynamic_cast<CombinedEPPSresults *>(msg)) {
+    bubble("Remote BSM results received");
+    send(pk, "rePort$o");
   } else if (dest_addr == my_address && dynamic_cast<SingleClickResult *>(msg)) {
     bubble("Single click result from BSA received");
     send(pk, "rePort$o");
