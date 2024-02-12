@@ -54,11 +54,13 @@ module QNIC
 
         bsa_controller_passive: BSAController if receiver && passive {
             mode = "passive";
-            @display("p=466.716,794.77");
+            @display("p=138.662,1160.026");
         }
 
-        gate_closer: dummyModule;
+        gate_closer: dummyModule {
 
+            @display("p=466.716,1447.496");
+        }
     connections:
         for i=0..num_buffer-1 {
             lens.from_emitters++ <-- statQubit[i].tolens_quantum_port;

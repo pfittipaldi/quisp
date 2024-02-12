@@ -30,8 +30,8 @@ void FSChannel::initialize() {
 
 cChannel::Result FSChannel::processMessage(cMessage *msg, const SendOptions &options, simtime_t t) {
     Result result;
-
-    if (!checkLOS()) {
+    auto ospf_message = dynamic_cast<messages::OspfPacket *>(msg);
+    if (!checkLOS() and ospf_message == nullptr) {
         result.discard = true;
     } else {
     recalculateChannelParameters();

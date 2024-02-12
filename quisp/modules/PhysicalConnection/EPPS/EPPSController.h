@@ -36,6 +36,7 @@ class EPPSController : public cSimpleModule {
   double getTravelTimeFromPort(int port);
   double getPredictedTravelTimeFromPort(int port);
   int getExternalQNICIndexFromPort(int port);
+  int getNeighborEmittersNumberFromPort(int port);
 
   // information for communications
   int address;
@@ -62,6 +63,7 @@ class EPPSController : public cSimpleModule {
   utils::ComponentProvider provider;
   EmitPhotonRequest *emit_req;
   bool emission_stopped;
+  int photons_in_burst,emitted_photons;
 };
 
 }  // namespace quisp::modules

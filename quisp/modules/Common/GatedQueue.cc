@@ -10,6 +10,11 @@ void GatedQueue::handleMessage(cMessage *msg)
         bubble("GatedQueue received a message!\n");
       }
 
+    if (msg->arrivedOn("in") and dynamic_cast<OspfPacket *>(msg) != nullptr) {
+        send(msg,"line$o");
+        return;
+    }
+
     if (msg->arrivedOn("from_ps") and dynamic_cast<VisibilityMessage *>(msg) == nullptr) {
     throw(cRuntimeError("Non-control message at the control gate of a gated queue, this should not happen."));
     }

@@ -16,6 +16,7 @@
 #include "omnetpp/cexception.h"
 #include <cmath>
 #include "CSVParser.h"
+#include "messages/ospf_messages_m.h"
 
 using namespace omnetpp;
 
