@@ -87,10 +87,18 @@ void Router::handleMessage(cMessage *msg) {
     bubble("Single click result from BSA received");
     send(pk, "rePort$o");
     return;
+  } else if (dest_addr == my_address && dynamic_cast<BatchSingleClickResults *>(msg)) {
+    bubble("Single click EPPS batch from BSA received");
+    send(pk, "rePort$o");
+    return;
   } else if (dest_addr == my_address && dynamic_cast<MSMResult *>(msg)) {
     bubble("MSM BSA result from partner RE received");
     send(pk, "rePort$o");
     return;
+  } else if (dest_addr == my_address && dynamic_cast<MSMResultsBatch *>(msg)) {
+      bubble("MSM Batch result from partner RE received");
+      send(pk, "rePort$o");
+      return;
   } else if (dest_addr == my_address && dynamic_cast<StopEPPSEmission *>(msg)) {
     bubble("Stop EPPS emission signal received");
     send(pk, "toApp");

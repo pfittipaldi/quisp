@@ -60,6 +60,11 @@ packet MSMResult extends Header
     PauliOperator correctionOperation;
 }
 
+packet MSMResultsBatch extends Header
+{
+	MSMResult result[] @appender(appendMSMResult) @getter(getMSMResult) @sizeGetter(numberOfResults);
+}
+
 packet MSMResultArrivalCheck extends Header
 {
     int qnicIndex;

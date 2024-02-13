@@ -24,4 +24,8 @@ packet SingleClickResult extends Header {
     int qnicIndex;
 }
 
+packet BatchSingleClickResults extends Header {
+	SingleClickResult click_results[] @appender(appendClickResult) @getter(getSingleResult) @sizeGetter(numberOfClicks);
+}
+
 packet CancelBSMTimeOutMsg {}

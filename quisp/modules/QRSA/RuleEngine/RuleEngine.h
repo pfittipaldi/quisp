@@ -78,11 +78,13 @@ class RuleEngine : public IRuleEngine, public Logger::LoggerBase {
  protected:
   void initialize() override;
   void handleMessage(cMessage *msg) override;
-  void handleMSMResult(messages::MSMResult *msm_result);
+  void handleMSMResult(const messages::MSMResult *msm_result);
+  void handleMSMResultBatch(messages::MSMResultsBatch *msm_result_batch);
   void handleLinkGenerationResult(messages::CombinedBSAresults *bsa_result);
   void handlePurificationResult(messages::PurificationResult *purification_result);
   void handleSwappingResult(messages::SwappingResult *swapping_result);
-  void handleSingleClickResult(messages::SingleClickResult *click_result);
+  messages::MSMResult* handleSingleClickResult(messages::SingleClickResult *click_result, int qubit_index);
+  void handleBatchClickResult(messages::BatchSingleClickResults *batch_MSM_click_result);
   messages::CombinedBSAresults *generateCombinedBSAresults(int qnic_index);
   void executeAllRuleSets();
   void sendEmitPhotonSignalToQnic(QNIC_type qnic_type, int qnic_index, int qubit_index, bool is_first, bool is_last);

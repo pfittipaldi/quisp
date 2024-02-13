@@ -142,11 +142,11 @@ void RuleEngine::handleMessage(cMessage *msg) {
     stopOnGoingPhotonEmission(QNIC_RP, qnic_index);
     scheduleMSMPhotonEmission(QNIC_RP, qnic_index, notification_packet);
     // handle result incoming from bsa
-  } else if (auto *click_result = dynamic_cast<SingleClickResult *>(msg)) {
-    handleSingleClickResult(click_result);
+  } else if (auto *batch_MSM_click_results = dynamic_cast<BatchSingleClickResults *>(msg)) {
+    handleBatchClickResult(batch_MSM_click_results);
     // handle result incoming from partner node
-  } else if (auto *msm_result = dynamic_cast<MSMResult *>(msg)) {
-    handleMSMResult(msm_result);
+  } else if (auto *msm_result_batch = dynamic_cast<MSMResultsBatch *>(msg)) {
+    handleMSMResultBatch(msm_result_batch);
   } else if (auto *pk = dynamic_cast<LinkTomographyRuleSet *>(msg)) {
     auto *ruleset = pk->getRuleSet();
     runtimes.acceptRuleSet(ruleset->construct());
@@ -239,10 +239,22 @@ void RuleEngine::freeFailedEntanglementAttemptQubits(QNIC_type type, int qnic_in
   emitted_indices.clear();
 }
 
-void RuleEngine::handleSingleClickResult(SingleClickResult *click_result) {
+void RuleEngine::handleBatchClickResult(BatchSingleClickResults *batch_MSM_click_result) {
+    MSMResultsBatch* results_for_partner = new MSMResultsBatch();
+    for (int index = 0; index < batch_MSM_click_result->numberOfClicks(); index++) {
+        SingleClickResult* click_result = const_cast<SingleClickResult*>(&batch_MSM_click_result->getSingleResult(index));
+        MSMResult* msm_result = handleSingleClickResult(click_result,index);
+        results_for_partner->appendMSMResult(*msm_result);
+    }
+    results_for_partner->setSrcAddr(parentAddress);
+    results_for_partner->setDestAddr(msm_info_map[0].partner_address);
+    send(results_for_partner, "RouterPort$o");
+}
+
+MSMResult* RuleEngine::handleSingleClickResult(SingleClickResult *click_result, int qubit_index) {
   auto qnic_index = click_result->getQnicIndex();
   auto &msm_info = msm_info_map[qnic_index];
-  auto qubit_index = msm_info.qubit_info_map[msm_info.iteration_index];
+  //auto qubit_index = msm_info.qubit_info_map[msm_info.iteration_index];
   MSMResult *msm_result = new MSMResult();
   msm_result->setQnicIndex(msm_info.partner_qnic_index);
   msm_result->setQnicType(QNIC_RP);
@@ -255,15 +267,22 @@ void RuleEngine::handleSingleClickResult(SingleClickResult *click_result) {
   if (click_result->getClickResult().success) {
     msm_info.qubit_postprocess_info[msm_info.photon_index_counter].qubit_index = qubit_index;
     msm_info.qubit_postprocess_info[msm_info.photon_index_counter].correction_operation = click_result->getClickResult().correction_operation;
-    msm_info.iteration_index++;
+    //msm_info.iteration_index++;
   } else {
     realtime_controller->ReInitialize_StationaryQubit(qnic_index, qubit_index, QNIC_RP, false);
     qnic_store->setQubitBusy(QNIC_RP, qnic_index, qubit_index, false);
   }
-  send(msm_result, "RouterPort$o");
+  return msm_result;
+  //send(msm_result, "RouterPort$o");
 }
 
-void RuleEngine::handleMSMResult(MSMResult *msm_result) {
+void RuleEngine::handleMSMResultBatch(MSMResultsBatch *msm_result_batch) {
+    for (int index = 0; index < msm_result_batch->numberOfResults(); index++) {
+        handleMSMResult(&msm_result_batch->getMSMResult(index));
+}
+}
+
+void RuleEngine::handleMSMResult(const MSMResult *msm_result) {
   auto qnic_index = msm_result->getQnicIndex();
   auto &msm_info = msm_info_map[qnic_index];
   auto qubit_itr = msm_info.qubit_postprocess_info.find(msm_result->getPhotonIndex());
@@ -388,3 +407,23 @@ void RuleEngine::freeConsumedResource(int qnic_index /*Not the address!!!*/, ISt
 }
 
 }  // namespace quisp::modules
+
+//auto qnic_index = click_result->getQnicIndex();
+//        auto &msm_info = msm_info_map[qnic_index];
+//        auto qubit_index = msm_info.qubit_info_map[msm_info.iteration_index];
+//        MSMResult *msm_result = new MSMResult();
+//        msm_result->setQnicIndex(msm_info.partner_qnic_index);
+//        msm_result->setQnicType(QNIC_RP);
+//        msm_result->setPhotonIndex(msm_info.photon_index_counter);
+//        msm_result->setSuccess(click_result->getClickResult().success);
+//        msm_result->setCorrectionOperation(click_result->getClickResult().correction_operation);
+//        //msm_result->setSrcAddr(parentAddress);
+//        //msm_result->setDestAddr(msm_info.partner_address);
+//        msm_result->setKind(6);
+//        if (click_result->getClickResult().success) {
+//          msm_info.qubit_postprocess_info[msm_info.photon_index_counter].qubit_index = qubit_index;
+//          msm_info.qubit_postprocess_info[msm_info.photon_index_counter].correction_operation = click_result->getClickResult().correction_operation;
+//          msm_info.iteration_index++;
+//        } else {
+//          realtime_controller->ReInitialize_StationaryQubit(qnic_index, qubit_index, QNIC_RP, false);
+//          qnic_store->setQubitBusy(QNIC_RP, qnic_index, qubit_index, false);

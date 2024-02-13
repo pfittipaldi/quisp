@@ -98,25 +98,16 @@ void BSAController::sendMeasurementResults(BatchClickEvent *batch_click_msg) {
     send(rightpk, "to_router");
     scheduleAt(simTime() + 1.1 * offset_time_for_first_photon, time_out_message);
   } else {
-      CombinedEPPSresults* results_for_remote = new CombinedEPPSresults;
+    BatchSingleClickResults* click_results_batch = new BatchSingleClickResults;
       for (int index = 0; index < batch_click_msg->numberOfClicks(); index++) {
-            if (!batch_click_msg->getClickResults(index).success) continue;
-            results_for_remote->appendSuccessIndex(index);
-            results_for_remote->appendCorrectionOperation(PauliOperator::I);
-            }
-      CombinedEPPSresults* results_for_local = results_for_remote;
-      results_for_local->setNeighborAddress(left_qnic.parent_node_addr);
-      results_for_local->setSrcAddr(right_qnic.parent_node_addr);
-      results_for_local->setDestAddr(left_qnic.parent_node_addr);
-      results_for_local->setRemote(false);
-
-      results_for_remote->setNeighborAddress(right_qnic.parent_node_addr);
-      results_for_remote->setSrcAddr(left_qnic.parent_node_addr);
-      results_for_remote->setDestAddr(right_qnic.parent_node_addr);
-      results_for_remote->setRemote(true);
-
-      send(results_for_remote,"to_router");
-      send(results_for_local,"to_router");
+           SingleClickResult *click_result = new SingleClickResult();
+           click_result->setClickResult(batch_click_msg->getClickResults(index));
+           click_result->setQnicIndex(left_qnic.index);
+           click_results_batch->appendClickResult(*click_result);
+      }
+      click_results_batch->setDestAddr(left_qnic.parent_node_addr);
+      click_results_batch->setSrcAddr(left_qnic.parent_node_addr);
+      send(click_results_batch,"to_router");
 //    SingleClickResult *click_result = new SingleClickResult();
 //    if (batch_click_msg->numberOfClicks() != 1) {
 //      throw cRuntimeError("Number of clicks of BSA should be one");
