@@ -85,6 +85,10 @@ void BSAController::sendMeasurementResults(BatchClickEvent *batch_click_msg) {
   if (is_active) {
     CombinedBSAresults *leftpk = generateNextNotificationTiming(true);
     CombinedBSAresults *rightpk = generateNextNotificationTiming(false);
+  } else {
+      BSAResults_NoTiming *leftpk = generateResultsPacket(true);
+      BSAResults_NoTiming *rightpk = generateResultsPacket(false);
+  }
     for (int index = 0; index < batch_click_msg->numberOfClicks(); index++) {
       if (!batch_click_msg->getClickResults(index).success) continue;
       leftpk->appendSuccessIndex(index);
@@ -96,23 +100,24 @@ void BSAController::sendMeasurementResults(BatchClickEvent *batch_click_msg) {
     }
     send(leftpk, "to_router");
     send(rightpk, "to_router");
-    scheduleAt(simTime() + 1.1 * offset_time_for_first_photon, time_out_message);
-  } else {
-    SingleClickResult *click_result = new SingleClickResult();
-    if (batch_click_msg->numberOfClicks() != 1) {
-      throw cRuntimeError("Number of clicks of BSA should be one");
-    }
-    click_result->setClickResult(batch_click_msg->getClickResults(0));
-    click_result->setQnicIndex(left_qnic.index);
-    click_result->setDestAddr(left_qnic.parent_node_addr);
-    click_result->setSrcAddr(left_qnic.parent_node_addr);
-    send(click_result, "to_router");
-  }
-  //  send(leftpk, "to_router");
-  //  send(rightpk, "to_router");
-  offset_time_for_first_photon = calculateOffsetTimeFromDistance();
-  last_result_send_time = simTime();
+    //scheduleAt(simTime() + 1.1 * offset_time_for_first_photon, time_out_message);
 }
+//  } else {
+//    SingleClickResult *click_result = new SingleClickResult();
+//    if (batch_click_msg->numberOfClicks() != 1) {
+//      throw cRuntimeError("Number of clicks of BSA should be one");
+//    }
+//    click_result->setClickResult(batch_click_msg->getClickResults(0));
+//    click_result->setQnicIndex(left_qnic.index);
+//    click_result->setDestAddr(left_qnic.parent_node_addr);
+//    click_result->setSrcAddr(left_qnic.parent_node_addr);
+//    send(click_result, "to_router");
+//  }
+//  //  send(leftpk, "to_router");
+//  //  send(rightpk, "to_router");
+//  offset_time_for_first_photon = calculateOffsetTimeFromDistance();
+//  last_result_send_time = simTime();
+//}
 
 BSMTimingNotification *BSAController::generateFirstNotificationTiming(bool is_left) {
   int destination = (is_left) ? left_qnic.parent_node_addr : right_qnic.parent_node_addr;
@@ -135,6 +140,23 @@ BSMTimingNotification *BSAController::generateFirstNotificationTiming(bool is_le
   notification_packet->setDestAddr(destination);
   notification_packet->setFirstPhotonEmitTime(emit_time);
   notification_packet->setInterval(time_interval_between_photons);
+  notification_packet->setQnicIndex(qnic_index);
+  notification_packet->setQnicType(qnic_type);
+  return notification_packet;
+}
+
+BSAResults_NoTiming *BSAController::generateResultsPacket(bool is_left) {
+  int destination = (is_left) ? left_qnic.parent_node_addr : right_qnic.parent_node_addr;
+  int qnic_index = (is_left) ? left_qnic.index : right_qnic.index;
+  auto qnic_type = (is_left) ? left_qnic.type : right_qnic.type;
+  auto *notification_packet = new BSAResults_NoTiming();
+
+  offset_time_for_first_photon = calculateOffsetTimeFromDistance();
+  left_travel_time = getPredictedTravelTimeFromPort(0);
+  right_travel_time = getPredictedTravelTimeFromPort(1);
+
+  notification_packet->setSrcAddr(address);
+  notification_packet->setDestAddr(destination);
   notification_packet->setQnicIndex(qnic_index);
   notification_packet->setQnicType(qnic_type);
   return notification_packet;
@@ -164,6 +186,7 @@ CombinedBSAresults *BSAController::generateNextNotificationTiming(bool is_left) 
   notification_packet->setQnicType(qnic_type);
   return notification_packet;
 }
+
 
 simtime_t BSAController::calculateOffsetTimeFromDistance() {
   auto current_longer_travel_time = std::max(getCurrentTravelTimeFromPort(0), getCurrentTravelTimeFromPort(1));

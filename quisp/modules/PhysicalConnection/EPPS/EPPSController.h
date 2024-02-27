@@ -31,11 +31,13 @@ class EPPSController : public cSimpleModule {
   virtual void finish() override;
   virtual void checkNeighborsBSACapacity();
   virtual EPPSTimingNotification *generateNotifier(bool is_left);
-
+  virtual BSMTimingNotification *generateFirstNotificationTiming(bool is_left);
  private:
   double getCurrentTravelTimeFromPort(int port);
   double getPredictedTravelTimeFromPort(int port);
   int getExternalQNICIndexFromPort(int port);
+  int getNeighborEmittersNumberFromPort(int port);
+
 
   // information for communications
   int address;
@@ -50,6 +52,8 @@ class EPPSController : public cSimpleModule {
 
   simtime_t time_interval_between_photons;
   double photon_emission_per_second;
+  int photons_in_burst;
+  int emitted_photons;
   simtime_t local_emit_time;
   simtime_t left_emit_time;
   simtime_t right_emit_time;

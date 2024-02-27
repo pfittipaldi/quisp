@@ -32,7 +32,7 @@ class EntangledPhotonPairSource : public omnetpp::cSimpleModule {
  public:
   EntangledPhotonPairSource();
   ~EntangledPhotonPairSource();
-  virtual void emitPhotons();
+  virtual void emitPhotons(bool is_first, bool is_last);
 };
 
 }  // namespace quisp::modules

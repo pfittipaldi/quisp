@@ -41,20 +41,24 @@ void EPPSController::initialize() {
   time_out_count = 0;
   emission_stopped = false;
   checkNeighborsBSACapacity();
+  photons_in_burst = std::min(getNeighborEmittersNumberFromPort(0),getNeighborEmittersNumberFromPort(1));
   time_out_message = new EPPSNotificationTimeout();
   simtime_t first_notification_timer = par("initial_notification_timing_buffer").doubleValue();
   scheduleAt(first_notification_timer, time_out_message);
   resync_delay = SimTime(par("SAT_resync_delay"));
-  if (resync_delay > 0) {
-    cMessage *resync = new cMessage("Resync");
-    scheduleAt(first_notification_timer + resync_delay, resync);
-  }
+//  if (resync_delay > 0) {
+//    cMessage *resync = new cMessage("Resync");
+//    scheduleAt(first_notification_timer + resync_delay, resync);
+//  }
 }
 
 void EPPSController::handleMessage(cMessage *msg) {
   if (auto *pk = dynamic_cast<EmitPhotonRequest *>(msg)) {
-    epps->emitPhotons();
-    scheduleAt(simTime() + pk->getIntervalBetweenPhotons(), pk);
+    epps->emitPhotons(pk->isFirst(),pk->isLast());
+    emitted_photons++;
+    pk->setFirst(false);
+    if (!pk->isLast()) scheduleAt(simTime() + pk->getIntervalBetweenPhotons(), pk);
+    pk->setLast(emitted_photons == photons_in_burst - 1);
     return;
   } else if (msg == time_out_message) {
     left_travel_time = getCurrentTravelTimeFromPort(0);
@@ -64,12 +68,18 @@ void EPPSController::handleMessage(cMessage *msg) {
     right_travel_time_predicted = getPredictedTravelTimeFromPort(1);
 
     last_result_send_time = simTime();
-    EPPSTimingNotification *left_pk = generateNotifier(true);
-    EPPSTimingNotification *right_pk = generateNotifier(false);
-    send(left_pk, "to_router");
-    send(right_pk, "to_router");
+//    EPPSTimingNotification *left_pk = generateNotifier(true);
+//    EPPSTimingNotification *right_pk = generateNotifier(false);
+//    send(left_pk, "to_router");
+//    send(right_pk, "to_router");
+
+    send(generateFirstNotificationTiming(true), "to_router");
+    send(generateFirstNotificationTiming(false), "to_router");
+
     emit_req = new EmitPhotonRequest();
     emit_req->setIntervalBetweenPhotons(time_interval_between_photons);
+    emit_req->setFirst(true);
+    emitted_photons = 0;
     scheduleAt(local_emit_time, emit_req);
   } else if (dynamic_cast<StopEPPSEmission *>(msg)) {
     if (!emission_stopped) {
@@ -105,6 +115,26 @@ EPPSTimingNotification *EPPSController::generateNotifier(bool is_left) {
   return pk;
 }
 
+BSMTimingNotification *EPPSController::generateFirstNotificationTiming(bool is_left) {
+  int destination = (is_left) ? left_addr : right_addr;
+  int qnic_index = (is_left) ? left_qnic_index : right_qnic_index;
+  auto qnic_type = QNIC_RP;
+  auto *notification_packet = new BSMTimingNotification();
+
+  left_travel_time = getPredictedTravelTimeFromPort(0);
+  right_travel_time = getPredictedTravelTimeFromPort(1);
+
+  auto travel_time = (is_left) ? left_travel_time : right_travel_time;
+
+  notification_packet->setSrcAddr(address);
+  notification_packet->setDestAddr(destination);
+  notification_packet->setFirstPhotonEmitTime(local_emit_time + (is_left ? left_travel_time_predicted : right_travel_time_predicted));
+  notification_packet->setInterval(time_interval_between_photons);
+  notification_packet->setQnicIndex(qnic_index);
+  notification_packet->setQnicType(qnic_type);
+  return notification_packet;
+}
+
 void EPPSController::checkNeighborsBSACapacity() {
   int left_photon_detection_per_second = getParentModule()
                                              ->getSubmodule("epps")
@@ -130,6 +160,18 @@ void EPPSController::checkNeighborsBSACapacity() {
   // If not, the time interval between photons is adjusted to the photon_emission_per_second.
   simtime_t pump_rate = (double)1 / (double)photon_emission_per_second;
   if (pump_rate > time_interval_between_photons) time_interval_between_photons = pump_rate;
+}
+
+int EPPSController::getNeighborEmittersNumberFromPort(int port) {
+    int emitters = getParentModule()
+                                                ->getSubmodule("epps")
+                                                ->gate("quantum_port$i", port)
+                                                ->getPreviousGate()  // EPPSNode quantum_port
+                                                ->getPreviousGate()  // QNode quantum_port_receiver_passive
+                                                ->getPreviousGate()  // QNIC quantum_port
+                                                ->getOwnerModule()  // QNIC
+                                                ->par("num_buffer");
+    return emitters;
 }
 
 double EPPSController::getCurrentTravelTimeFromPort(int port) {

@@ -42,6 +42,13 @@ packet CombinedBSAresults extends BSMTimingNotification
     PauliOperator list_of_correction_operations[] @appender(appendCorrectionOperation) @getter(getCorrectionOperationList) ;
 }
 
+// Batch MSM experiment, I want a packet with the results and without the timing notification. 
+packet BSAResults_NoTiming extends Header {
+    int neighbor_address @getter(getNeighborAddress) @setter(setNeighborAddress);
+    int list_of_succesful_photon_indices[] @appender(appendSuccessIndex) @getter(getSuccessfulPhotonIndices) @sizeGetter(getSuccessCount);
+    PauliOperator list_of_correction_operations[] @appender(appendCorrectionOperation) @getter(getCorrectionOperationList) ;
+}
+
 // Used for MSM. Sends the BSA success/failure, correction message to the partner node
 packet MSMResult extends Header
 {

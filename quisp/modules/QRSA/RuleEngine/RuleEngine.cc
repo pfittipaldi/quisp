@@ -94,29 +94,29 @@ void RuleEngine::handleMessage(cMessage *msg) {
     auto number_of_free_emitters = qnic_store->countNumFreeQubits(type, qnic_index);
     auto qubit_index = qnic_store->takeFreeQubitIndex(type, qnic_index);
     // If this is MSM, we keep on emmiting photons continuously
-    if (pk->isMSM()) {
-      auto &msm_info = msm_info_map[qnic_index];
-      msm_info.photon_index_counter++;
-      if (number_of_free_emitters != 0) {
-        msm_info.qubit_info_map[msm_info.iteration_index] = qubit_index;
-        sendEmitPhotonSignalToQnic(type, qnic_index, qubit_index, true, true);
-      } else {
-        // send MSMResult to partner node, even if we fail to have BSM happen
-        MSMResult *msm_result = new MSMResult();
-        msm_result->setQnicIndex(msm_info.partner_qnic_index);
-        msm_result->setQnicType(QNIC_RP);
-        msm_result->setPhotonIndex(msm_info.photon_index_counter);
-        msm_result->setSuccess(false);
-        msm_result->setCorrectionOperation(PauliOperator ::I);
-        msm_result->setSrcAddr(parentAddress);
-        msm_result->setDestAddr(msm_info.partner_address);
-        msm_result->setKind(6);
-        send(msm_result, "RouterPort$o");
-      }
-      scheduleAt(simTime() + pk->getIntervalBetweenPhotons(), pk);
-      return;
-      // If not, we emit photons on demand
-    } else {
+//    if (pk->isMSM()) {
+//      auto &msm_info = msm_info_map[qnic_index];
+//      msm_info.photon_index_counter++;
+//      if (number_of_free_emitters != 0) {
+//        msm_info.qubit_info_map[msm_info.iteration_index] = qubit_index;
+//        sendEmitPhotonSignalToQnic(type, qnic_index, qubit_index, true, true);
+//      } else {
+//        // send MSMResult to partner node, even if we fail to have BSM happen
+//        MSMResult *msm_result = new MSMResult();
+//        msm_result->setQnicIndex(msm_info.partner_qnic_index);
+//        msm_result->setQnicType(QNIC_RP);
+//        msm_result->setPhotonIndex(msm_info.photon_index_counter);
+//        msm_result->setSuccess(false);
+//        msm_result->setCorrectionOperation(PauliOperator ::I);
+//        msm_result->setSrcAddr(parentAddress);
+//        msm_result->setDestAddr(msm_info.partner_address);
+//        msm_result->setKind(6);
+//        send(msm_result, "RouterPort$o");
+//      }
+//      scheduleAt(simTime() + pk->getIntervalBetweenPhotons(), pk);
+//      return;
+//      // If not, we emit photons on demand
+//    } else {
       if (number_of_free_emitters == 0) return;
       auto is_first = pk->isFirst();
       auto is_last = (number_of_free_emitters == 1);
@@ -129,7 +129,7 @@ void RuleEngine::handleMessage(cMessage *msg) {
       // early return since this doesn't affect entangled resource
       // and we don't want to delete these messages
       return;
-    }
+    //}
     // store message from epps to rule engine
   } else if (auto *notification_packet = dynamic_cast<EPPSTimingNotification *>(msg)) {
     auto partner_address = notification_packet->getOtherQnicParentAddr();
@@ -157,6 +157,8 @@ void RuleEngine::handleMessage(cMessage *msg) {
   } else if (auto *pkt = dynamic_cast<SwappingResult *>(msg)) {
     handleSwappingResult(pkt);
     // handle self message to check whether partner's result has arrived
+  } else if (auto *pkt = dynamic_cast<BSMResults_NoTiming *>(msg)) {
+    handleTiminglessBSMResult(pkt);
   } else if (auto *pkt = dynamic_cast<InternalRuleSetForwarding *>(msg)) {
     // add actual process
     auto serialized_ruleset = pkt->getRuleSet();
@@ -261,6 +263,10 @@ void RuleEngine::handleSingleClickResult(SingleClickResult *click_result) {
     qnic_store->setQubitBusy(QNIC_RP, qnic_index, qubit_index, false);
   }
   send(msm_result, "RouterPort$o");
+}
+
+void RuleEngine::handleTiminglessBSMResult(BSMResult_NoTiming* result) {
+
 }
 
 void RuleEngine::handleMSMResult(MSMResult *msm_result) {

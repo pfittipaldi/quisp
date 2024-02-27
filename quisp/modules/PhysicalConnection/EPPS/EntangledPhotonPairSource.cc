@@ -44,7 +44,7 @@ void EntangledPhotonPairSource::handleMessage(cMessage *msg) {
   }
 }
 
-void EntangledPhotonPairSource::emitPhotons() {
+void EntangledPhotonPairSource::emitPhotons(bool is_first, bool is_last) {
   Enter_Method("emitPhotons()");
   auto *left_photon = new PhotonicQubit("LeftPhoton");
   auto *right_photon = new PhotonicQubit("RightPhoton");
@@ -55,10 +55,10 @@ void EntangledPhotonPairSource::emitPhotons() {
   left_photon->setQubitRef(left_photon_ref);
   right_photon->setQubitRef(right_photon_ref);
 
-  left_photon->setFirst(true);
-  right_photon->setFirst(true);
-  left_photon->setLast(true);
-  right_photon->setLast(true);
+  left_photon->setFirst(is_first);
+  right_photon->setFirst(is_first);
+  left_photon->setLast(is_last);
+  right_photon->setLast(is_last);
   float jitter_timing = normal(0, emission_jittering_standard_deviation);
   float abso = fabs(jitter_timing);
   scheduleAt(simTime() + abso, left_photon);
