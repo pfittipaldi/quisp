@@ -142,8 +142,9 @@ void Router::handleMessage(cMessage *msg) {
   } else if (dest_addr == my_address && dynamic_cast<OspfPacket *>(msg)) {
     send(pk, "rdPort$o");
     return;
-  } else if (dest_addr == my_address && dynamic_cast<BSAResults_NoTiming *>(msg)) {
-    send(pk, "rePort$o");
+  } else if (dest_addr == my_address && dynamic_cast<QNICReport *>(msg)) {
+    QNICReport* qnic_report = dynamic_cast<QNICReport *>(msg);
+    send(pk, "toQNIC",qnic_report->getDestQNICIndex());
     return;
   }
 

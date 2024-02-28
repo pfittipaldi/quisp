@@ -40,10 +40,13 @@ packet CombinedBSAresults extends BSMTimingNotification
     int neighbor_address @getter(getNeighborAddress) @setter(setNeighborAddress);
     int list_of_succesful_photon_indices[] @appender(appendSuccessIndex) @getter(getSuccessfulPhotonIndices) @sizeGetter(getSuccessCount);
     PauliOperator list_of_correction_operations[] @appender(appendCorrectionOperation) @getter(getCorrectionOperationList) ;
+	bool is_timingless @getter(isTimingless) @setter(setTimingless);
 }
 
 // Batch MSM experiment, I want a packet with the results and without the timing notification. 
 packet BSAResults_NoTiming extends Header {
+    QNIC_type qnic_type @setter(setQnicType)  @getter(getQnicType);
+    int qnic_index      @setter(setQnicIndex) @getter(getQnicIndex);
     int neighbor_address @getter(getNeighborAddress) @setter(setNeighborAddress);
     int list_of_succesful_photon_indices[] @appender(appendSuccessIndex) @getter(getSuccessfulPhotonIndices) @sizeGetter(getSuccessCount);
     PauliOperator list_of_correction_operations[] @appender(appendCorrectionOperation) @getter(getCorrectionOperationList) ;

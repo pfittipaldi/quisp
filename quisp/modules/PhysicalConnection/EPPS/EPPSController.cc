@@ -14,6 +14,7 @@
 #include "omnetpp/cmessage.h"
 #include "omnetpp/csimulation.h"
 #include "omnetpp/simtime.h"
+#include "messages/EPPS_ipc_messages_m.h"
 
 using namespace omnetpp;
 using quisp::channels::FSChannel;
@@ -36,6 +37,7 @@ void EPPSController::initialize() {
   right_addr = getExternalAdressFromPort(1);
   left_qnic_index = getExternalQNICIndexFromPort(0);
   right_qnic_index = getExternalQNICIndexFromPort(1);
+  sendQNICReportsToNeighbors();
   // left_travel_time = getCurrentTravelTimeFromPort(0);
   // right_travel_time = getCurrentTravelTimeFromPort(1);
   time_out_count = 0;
@@ -232,6 +234,22 @@ int EPPSController::getExternalQNICIndexFromPort(int port) {
       ->getPreviousGate()  // QNIC quantum_port
       ->getOwnerModule()  // QNIC
       ->par("self_qnic_index");
+}
+
+void EPPSController::sendQNICReportsToNeighbors() {
+    sendQNICReportToNeighbor(true);
+    sendQNICReportToNeighbor(false);
+}
+
+void EPPSController::sendQNICReportToNeighbor(bool is_left) {
+    QNICReport* report = new QNICReport;
+    report->setSrcAddr(address);
+    report->setDestAddr((is_left? left_addr : right_addr));
+    report->setDestQNICIndex(is_left ? left_qnic_index : right_qnic_index);
+
+    report->setPartnerQNICAddr((is_left? right_addr : left_addr));
+    report->setPartnerQNICIndex(is_left ? right_qnic_index : left_qnic_index);
+    send(report,"to_router");
 }
 
 }  // namespace quisp::modules

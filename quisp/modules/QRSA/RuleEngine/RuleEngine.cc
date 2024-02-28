@@ -79,7 +79,7 @@ void RuleEngine::handleMessage(cMessage *msg) {
 
   if (auto *notification_packet = dynamic_cast<BSMTimingNotification *>(msg)) {
     if (auto *bsa_results = dynamic_cast<CombinedBSAresults *>(msg)) {
-      handleLinkGenerationResult(bsa_results);
+      if (bsa_results->isTimingless()) handleTiminglessBSMResult(bsa_results); else handleLinkGenerationResult(bsa_results);
     }
     auto type = notification_packet->getQnicType();
     auto qnic_index = notification_packet->getQnicIndex();
@@ -157,8 +157,6 @@ void RuleEngine::handleMessage(cMessage *msg) {
   } else if (auto *pkt = dynamic_cast<SwappingResult *>(msg)) {
     handleSwappingResult(pkt);
     // handle self message to check whether partner's result has arrived
-  } else if (auto *pkt = dynamic_cast<BSMResults_NoTiming *>(msg)) {
-    handleTiminglessBSMResult(pkt);
   } else if (auto *pkt = dynamic_cast<InternalRuleSetForwarding *>(msg)) {
     // add actual process
     auto serialized_ruleset = pkt->getRuleSet();
@@ -226,7 +224,7 @@ void RuleEngine::sendEmitPhotonSignalToQnic(QNIC_type qnic_type, int qnic_index,
   if (is_first) pulse |= STATIONARYQUBIT_PULSE_BEGIN;
   if (is_last) pulse |= STATIONARYQUBIT_PULSE_END;
   realtime_controller->EmitPhoton(qnic_index, qubit_index, qnic_type, pulse);
-  if (qnic_type != QNIC_RP) emitted_photon_order_map[{qnic_type, qnic_index}].push_back(qubit_index);
+  emitted_photon_order_map[{qnic_type, qnic_index}].push_back(qubit_index);
 }
 simtime_t RuleEngine::getEmitTimeFromBSMNotification(quisp::messages::BSMTimingNotification *notification) { return notification->getFirstPhotonEmitTime(); }
 
@@ -265,7 +263,56 @@ void RuleEngine::handleSingleClickResult(SingleClickResult *click_result) {
   send(msm_result, "RouterPort$o");
 }
 
-void RuleEngine::handleTiminglessBSMResult(BSMResult_NoTiming* result) {
+void RuleEngine::handleTiminglessBSMResult(CombinedBSAresults * result) {
+    if (!local_BSM_arrived) {
+        local_BSM_arrived = true;
+        MSM_storeLocalBSM(result); //store the results from local
+        return;
+    }
+    MSM_handleRemoteBSM(result); //compare remote and local
+    local_BSM_arrived = false;
+}
+
+void RuleEngine::MSM_storeLocalBSM(CombinedBSAresults * result) {
+    MSM_local_result = result->dup();
+}
+
+void RuleEngine::MSM_handleRemoteBSM(CombinedBSAresults * remote_result) {
+    CombinedBSAresults * local_result = MSM_local_result;
+
+    auto type = remote_result->getQnicType();
+    auto qnic_index = remote_result->getQnicIndex();
+    auto num_local_success = local_result->getSuccessCount();
+    auto num_remote_success = remote_result->getSuccessCount();
+    std::set<int>* remote_success_indices = new std::set<int>;
+    auto partner_address = local_result->getNeighborAddress();
+    auto &emitted_indices = emitted_photon_order_map[{type, qnic_index}];
+    for (int i = num_remote_success - 1; i >= 0; i--) {
+        remote_success_indices->insert(remote_result->getSuccessfulPhotonIndices(i));
+    }
+
+    for (int i = num_local_success - 1; i >= 0; i--) {
+        auto emitted_index = local_result->getSuccessfulPhotonIndices(i);
+        auto qubit_index = emitted_indices[emitted_index];
+        auto *qubit_record = qnic_store->getQubitRecord(type, qnic_index, qubit_index);
+        auto iterator = emitted_indices.begin();
+        std::advance(iterator, emitted_index);
+        if (remote_success_indices->count(emitted_index)) {
+            bell_pair_store.insertEntangledQubit(partner_address, qubit_record);
+            auto correction_operation = local_result->getCorrectionOperationList(i);
+                    if (correction_operation == PauliOperator::X) {
+                      realtime_controller->applyXGate(qubit_record);
+                    } else if (correction_operation == PauliOperator::Z) {
+                      realtime_controller->applyZGate(qubit_record);
+                    } else if (correction_operation == PauliOperator::Y) {
+                      realtime_controller->applyYGate(qubit_record);
+                    }
+        }
+        emitted_indices.erase(iterator);
+
+
+      }
+
 
 }
 

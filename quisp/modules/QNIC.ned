@@ -26,7 +26,7 @@ module QNIC
         inout qnic_quantum_port @loose; // One quantum port for every qnic in a node;
                                         // input - if BSA is inside
                                         // output - if BSA is outside
-
+		input from_parent_router @loose;
     submodules:
         statQubit[num_buffer]: StationaryQubit {
             stationary_qubit_address = index;
@@ -72,10 +72,10 @@ module QNIC
         bsa.quantum_port++ <--> qnic_quantum_port if receiver;
         bsa.to_bsa_controller --> bsa_controller.from_bsa if receiver && !passive;
         bsa_controller.to_router --> to_parent_router if receiver && !passive;
-        bsa_controller.from_router <-- gate_closer.close_output if receiver && !passive;
+        bsa_controller.from_router <-- from_parent_router if receiver && !passive;
 
         // if qnic is qnic_receiver_passive
         bsa.to_bsa_controller --> bsa_controller_passive.from_bsa if receiver && passive;
         bsa_controller_passive.to_router --> to_parent_router if receiver && passive;
-        bsa_controller_passive.from_router <-- gate_closer.close_output if receiver && passive;
+        bsa_controller_passive.from_router <-- from_parent_router if receiver && passive;
 }

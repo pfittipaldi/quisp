@@ -11,6 +11,7 @@
 
 #include "PhotonicQubit_m.h"
 #include "messages/classical_messages.h"
+#include "messages/EPPS_ipc_messages_m.h"
 #include "modules/PhysicalConnection/BSA/BellStateAnalyzer.h"
 #include "modules/PhysicalConnection/BSA/types.h"
 #include "modules/QNIC.h"
@@ -59,6 +60,7 @@ class BSAController : public cSimpleModule {
  private:
   BSMTimingNotification* generateFirstNotificationTiming(bool is_left);
   CombinedBSAresults* generateNextNotificationTiming(bool is_left);
+  CombinedBSAresults* generateResultsPacket(bool is_left);
 
   int getExternalQNICIndexFromPort(int port);
   simtime_t calculateOffsetTimeFromDistance();

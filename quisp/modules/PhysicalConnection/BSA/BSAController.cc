@@ -45,6 +45,7 @@ void BSAController::initialize() {
   // right_qnic = getExternalQNICInfoFromPort(1);
   time_out_count = 0;
   time_out_message = new BSMNotificationTimeout("bsm_notification_timeout");
+
   if (is_active) {
     time_interval_between_photons = SimTime(1, SIMTIME_S) / SimTime(getParentModule()->getSubmodule("bsa")->par("photon_detection_per_second").intValue(), SIMTIME_S);
     simtime_t first_notification_timer = SimTime(par("initial_notification_timing_buffer").doubleValue());
@@ -55,6 +56,11 @@ void BSAController::initialize() {
 }
 
 void BSAController::handleMessage(cMessage *msg) {
+  if (QNICReport * qnic_report = dynamic_cast<QNICReport *>(msg)) {
+      right_qnic.type = QNIC_RP;
+      right_qnic.parent_node_addr = qnic_report->getPartnerQNICAddr();
+      right_qnic.index = qnic_report->getPartnerQNICIndex();
+  }
   if (msg == time_out_message) {
     // P: For satellite links, we need to recalculate this for every pulse train due to variable channel length!
     send(generateFirstNotificationTiming(true), "to_router");
@@ -82,13 +88,9 @@ void BSAController::handleMessage(cMessage *msg) {
 }
 
 void BSAController::sendMeasurementResults(BatchClickEvent *batch_click_msg) {
-  if (is_active) {
-    CombinedBSAresults *leftpk = generateNextNotificationTiming(true);
-    CombinedBSAresults *rightpk = generateNextNotificationTiming(false);
-  } else {
-      BSAResults_NoTiming *leftpk = generateResultsPacket(true);
-      BSAResults_NoTiming *rightpk = generateResultsPacket(false);
-  }
+    auto leftpk = generateNextNotificationTiming(true);
+    auto rightpk = generateNextNotificationTiming(false);
+
     for (int index = 0; index < batch_click_msg->numberOfClicks(); index++) {
       if (!batch_click_msg->getClickResults(index).success) continue;
       leftpk->appendSuccessIndex(index);
@@ -145,11 +147,11 @@ BSMTimingNotification *BSAController::generateFirstNotificationTiming(bool is_le
   return notification_packet;
 }
 
-BSAResults_NoTiming *BSAController::generateResultsPacket(bool is_left) {
+CombinedBSAresults *BSAController::generateResultsPacket(bool is_left) {
   int destination = (is_left) ? left_qnic.parent_node_addr : right_qnic.parent_node_addr;
   int qnic_index = (is_left) ? left_qnic.index : right_qnic.index;
   auto qnic_type = (is_left) ? left_qnic.type : right_qnic.type;
-  auto *notification_packet = new BSAResults_NoTiming();
+  auto *notification_packet = new CombinedBSAresults();
 
   offset_time_for_first_photon = calculateOffsetTimeFromDistance();
   left_travel_time = getPredictedTravelTimeFromPort(0);
@@ -184,6 +186,8 @@ CombinedBSAresults *BSAController::generateNextNotificationTiming(bool is_left) 
   notification_packet->setInterval(time_interval_between_photons);
   notification_packet->setQnicIndex(qnic_index);
   notification_packet->setQnicType(qnic_type);
+
+  notification_packet -> setTimingless(!is_active);
   return notification_packet;
 }
 

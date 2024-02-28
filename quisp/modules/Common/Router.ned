@@ -11,6 +11,7 @@ simple Router
         input fromApp @loose;
         output toApp @loose;
         input fromQNIC[] @loose;
+        output toQNIC[] @loose;
         inout rdPort @loose;
         inout cmPort @loose;
         inout rePort @loose;

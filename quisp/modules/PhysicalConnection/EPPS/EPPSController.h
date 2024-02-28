@@ -37,6 +37,8 @@ class EPPSController : public cSimpleModule {
   double getPredictedTravelTimeFromPort(int port);
   int getExternalQNICIndexFromPort(int port);
   int getNeighborEmittersNumberFromPort(int port);
+  void sendQNICReportsToNeighbors();
+  void sendQNICReportToNeighbor(bool is_left);
 
 
   // information for communications
