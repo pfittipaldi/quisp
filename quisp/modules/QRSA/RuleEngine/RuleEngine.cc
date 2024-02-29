@@ -93,33 +93,9 @@ void RuleEngine::handleMessage(cMessage *msg) {
     auto qnic_index = pk->getQnicIndex();
     auto number_of_free_emitters = qnic_store->countNumFreeQubits(type, qnic_index);
     auto qubit_index = qnic_store->takeFreeQubitIndex(type, qnic_index);
-    // If this is MSM, we keep on emmiting photons continuously
-//    if (pk->isMSM()) {
-//      auto &msm_info = msm_info_map[qnic_index];
-//      msm_info.photon_index_counter++;
-//      if (number_of_free_emitters != 0) {
-//        msm_info.qubit_info_map[msm_info.iteration_index] = qubit_index;
-//        sendEmitPhotonSignalToQnic(type, qnic_index, qubit_index, true, true);
-//      } else {
-//        // send MSMResult to partner node, even if we fail to have BSM happen
-//        MSMResult *msm_result = new MSMResult();
-//        msm_result->setQnicIndex(msm_info.partner_qnic_index);
-//        msm_result->setQnicType(QNIC_RP);
-//        msm_result->setPhotonIndex(msm_info.photon_index_counter);
-//        msm_result->setSuccess(false);
-//        msm_result->setCorrectionOperation(PauliOperator ::I);
-//        msm_result->setSrcAddr(parentAddress);
-//        msm_result->setDestAddr(msm_info.partner_address);
-//        msm_result->setKind(6);
-//        send(msm_result, "RouterPort$o");
-//      }
-//      scheduleAt(simTime() + pk->getIntervalBetweenPhotons(), pk);
-//      return;
-//      // If not, we emit photons on demand
-//    } else {
-      if (number_of_free_emitters == 0) return;
-      auto is_first = pk->isFirst();
-      auto is_last = (number_of_free_emitters == 1);
+    if (number_of_free_emitters == 0) return;
+    auto is_first = pk->isFirst();
+    auto is_last = (number_of_free_emitters == 1);
       // need to set is_first to false
       pk->setFirst(false);
       sendEmitPhotonSignalToQnic(type, qnic_index, qubit_index, is_first, is_last);
@@ -301,6 +277,7 @@ void RuleEngine::MSM_handleRemoteBSM(TiminglessBSAResults * remote_result) {
         std::advance(iterator, emitted_index);
         if (remote_success_indices->count(emitted_index)) {
             bell_pair_store.insertEntangledQubit(partner_address, qubit_record);
+            emitted_indices.erase(iterator);
             auto correction_operation = local_result->getCorrectionOperationList(i);
                     if (correction_operation == PauliOperator::X) {
                       realtime_controller->applyXGate(qubit_record);
@@ -310,11 +287,8 @@ void RuleEngine::MSM_handleRemoteBSM(TiminglessBSAResults * remote_result) {
                       realtime_controller->applyYGate(qubit_record);
                     }
         }
-        emitted_indices.erase(iterator);
-
-
-      }
-
+}
+delete remote_success_indices;
 delete MSM_local_result;
 }
 
