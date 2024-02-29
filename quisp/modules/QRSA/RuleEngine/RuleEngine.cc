@@ -79,7 +79,7 @@ void RuleEngine::handleMessage(cMessage *msg) {
 
   if (auto *notification_packet = dynamic_cast<BSMTimingNotification *>(msg)) {
     if (auto *bsa_results = dynamic_cast<CombinedBSAresults *>(msg)) {
-      if (bsa_results->isTimingless()) handleTiminglessBSMResult(bsa_results); else handleLinkGenerationResult(bsa_results);
+      handleLinkGenerationResult(bsa_results);
     }
     auto type = notification_packet->getQnicType();
     auto qnic_index = notification_packet->getQnicIndex();
@@ -88,7 +88,7 @@ void RuleEngine::handleMessage(cMessage *msg) {
     if (getEmitTimeFromBSMNotification(notification_packet) >= simTime())
       schedulePhotonEmission(type, qnic_index,
                              notification_packet);  // If this check fails, it means that the BSM notification was from a previous passage and it makes no sense to emit photons.
-  } else if (auto *pk = dynamic_cast<EmitPhotonRequest *>(msg)) {
+    } else if (auto *pk = dynamic_cast<EmitPhotonRequest *>(msg)) {
     auto type = pk->getQnicType();
     auto qnic_index = pk->getQnicIndex();
     auto number_of_free_emitters = qnic_store->countNumFreeQubits(type, qnic_index);
@@ -181,8 +181,10 @@ void RuleEngine::handleMessage(cMessage *msg) {
     RuleSet ruleset(0, 0);
     ruleset.deserialize_json(serialized_ruleset);
     runtimes.acceptRuleSet(ruleset.construct());
+  } else if (auto *bsa_results = dynamic_cast<TiminglessBSAResults *> (msg)){
+      handleTiminglessBSMResult(bsa_results);
   } else if (auto *pkt = dynamic_cast<StopEmitting *>(msg)) {
-    handleStopEmitting(pkt);
+      handleStopEmitting(pkt);
   }
 
   for (int i = 0; i < number_of_qnics; i++) {
@@ -263,7 +265,7 @@ void RuleEngine::handleSingleClickResult(SingleClickResult *click_result) {
   send(msm_result, "RouterPort$o");
 }
 
-void RuleEngine::handleTiminglessBSMResult(CombinedBSAresults * result) {
+void RuleEngine::handleTiminglessBSMResult(TiminglessBSAResults * result) {
     if (!local_BSM_arrived) {
         local_BSM_arrived = true;
         MSM_storeLocalBSM(result); //store the results from local
@@ -273,12 +275,12 @@ void RuleEngine::handleTiminglessBSMResult(CombinedBSAresults * result) {
     local_BSM_arrived = false;
 }
 
-void RuleEngine::MSM_storeLocalBSM(CombinedBSAresults * result) {
+void RuleEngine::MSM_storeLocalBSM(TiminglessBSAResults * result) {
     MSM_local_result = result->dup();
 }
 
-void RuleEngine::MSM_handleRemoteBSM(CombinedBSAresults * remote_result) {
-    CombinedBSAresults * local_result = MSM_local_result;
+void RuleEngine::MSM_handleRemoteBSM(TiminglessBSAResults * remote_result) {
+    TiminglessBSAResults * local_result = MSM_local_result;
 
     auto type = remote_result->getQnicType();
     auto qnic_index = remote_result->getQnicIndex();
@@ -313,7 +315,7 @@ void RuleEngine::MSM_handleRemoteBSM(CombinedBSAresults * remote_result) {
 
       }
 
-
+delete MSM_local_result;
 }
 
 void RuleEngine::handleMSMResult(MSMResult *msm_result) {

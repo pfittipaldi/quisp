@@ -78,7 +78,7 @@ void BSAController::handleMessage(cMessage *msg) {
     return;
   }
   if (auto *batch_click_msg = dynamic_cast<BatchClickEvent *>(msg)) {
-    sendMeasurementResults(batch_click_msg);
+    if (is_active) sendMeasurementResults(batch_click_msg); else sendTiminglessMeasurementResults(batch_click_msg);
     delete msg;
     return;
   }
@@ -102,8 +102,26 @@ void BSAController::sendMeasurementResults(BatchClickEvent *batch_click_msg) {
     }
     send(leftpk, "to_router");
     send(rightpk, "to_router");
-    //scheduleAt(simTime() + 1.1 * offset_time_for_first_photon, time_out_message);
+    scheduleAt(simTime() + 1.1 * offset_time_for_first_photon, time_out_message);
 }
+
+void BSAController::sendTiminglessMeasurementResults(BatchClickEvent *batch_click_msg) {
+    auto leftpk = generateResultsPacket(true);
+    auto rightpk = generateResultsPacket(false);
+
+    for (int index = 0; index < batch_click_msg->numberOfClicks(); index++) {
+      if (!batch_click_msg->getClickResults(index).success) continue;
+      leftpk->appendSuccessIndex(index);
+      leftpk->appendCorrectionOperation(PauliOperator::I);
+      leftpk->setNeighborAddress(right_qnic.parent_node_addr);
+      rightpk->appendSuccessIndex(index);
+      rightpk->appendCorrectionOperation(batch_click_msg->getClickResults(index).correction_operation);
+      rightpk->setNeighborAddress(left_qnic.parent_node_addr);
+    }
+    send(leftpk, "to_router");
+    send(rightpk, "to_router");
+}
+
 //  } else {
 //    SingleClickResult *click_result = new SingleClickResult();
 //    if (batch_click_msg->numberOfClicks() != 1) {
@@ -147,11 +165,11 @@ BSMTimingNotification *BSAController::generateFirstNotificationTiming(bool is_le
   return notification_packet;
 }
 
-CombinedBSAresults *BSAController::generateResultsPacket(bool is_left) {
+TiminglessBSAResults *BSAController::generateResultsPacket(bool is_left) {
   int destination = (is_left) ? left_qnic.parent_node_addr : right_qnic.parent_node_addr;
   int qnic_index = (is_left) ? left_qnic.index : right_qnic.index;
   auto qnic_type = (is_left) ? left_qnic.type : right_qnic.type;
-  auto *notification_packet = new CombinedBSAresults();
+  auto *notification_packet = new TiminglessBSAResults();
 
   offset_time_for_first_photon = calculateOffsetTimeFromDistance();
   left_travel_time = getPredictedTravelTimeFromPort(0);

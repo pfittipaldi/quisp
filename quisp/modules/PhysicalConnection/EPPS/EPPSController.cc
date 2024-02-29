@@ -48,10 +48,10 @@ void EPPSController::initialize() {
   simtime_t first_notification_timer = par("initial_notification_timing_buffer").doubleValue();
   scheduleAt(first_notification_timer, time_out_message);
   resync_delay = SimTime(par("SAT_resync_delay"));
-//  if (resync_delay > 0) {
-//    cMessage *resync = new cMessage("Resync");
-//    scheduleAt(first_notification_timer + resync_delay, resync);
-//  }
+  if (resync_delay > 0) {
+    cMessage *resync = new cMessage("Resync");
+    scheduleAt(first_notification_timer + resync_delay, resync);
+  }
 }
 
 void EPPSController::handleMessage(cMessage *msg) {

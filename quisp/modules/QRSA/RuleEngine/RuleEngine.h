@@ -66,7 +66,7 @@ class RuleEngine : public IRuleEngine, public Logger::LoggerBase {
   int number_of_qnics_r;
   int number_of_qnics_rp;
   bool local_BSM_arrived;
-  messages::CombinedBSAresults * MSM_local_result;
+  messages::TiminglessBSAResults * MSM_local_result;
 
 
   IHardwareMonitor *hardware_monitor;
@@ -86,9 +86,9 @@ class RuleEngine : public IRuleEngine, public Logger::LoggerBase {
   void handlePurificationResult(messages::PurificationResult *purification_result);
   void handleSwappingResult(messages::SwappingResult *swapping_result);
   void handleSingleClickResult(messages::SingleClickResult *click_result);
-  void handleTiminglessBSMResult(messages::CombinedBSAresults * result);
-  void MSM_storeLocalBSM(messages::CombinedBSAresults * result);
-  void MSM_handleRemoteBSM(messages::CombinedBSAresults * remote_result);
+  void handleTiminglessBSMResult(messages::TiminglessBSAResults * result);
+  void MSM_storeLocalBSM(messages::TiminglessBSAResults * result);
+  void MSM_handleRemoteBSM(messages::TiminglessBSAResults * remote_result);
 
   messages::CombinedBSAresults *generateCombinedBSAresults(int qnic_index);
   void executeAllRuleSets();

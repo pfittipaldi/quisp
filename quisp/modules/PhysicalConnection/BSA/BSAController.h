@@ -60,7 +60,7 @@ class BSAController : public cSimpleModule {
  private:
   BSMTimingNotification* generateFirstNotificationTiming(bool is_left);
   CombinedBSAresults* generateNextNotificationTiming(bool is_left);
-  CombinedBSAresults* generateResultsPacket(bool is_left);
+  TiminglessBSAResults* generateResultsPacket(bool is_left);
 
   int getExternalQNICIndexFromPort(int port);
   simtime_t calculateOffsetTimeFromDistance();
@@ -70,7 +70,7 @@ class BSAController : public cSimpleModule {
   double getExternalDistanceFromPort(int port);
   QNicInfo getExternalQNICInfoFromPort(int port);
   void sendMeasurementResults(BatchClickEvent* msg);
-
+  void sendTiminglessMeasurementResults(BatchClickEvent *batch_click_msg);
   // information for communications
   int address;
   QNicInfo left_qnic;
