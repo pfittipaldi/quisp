@@ -249,6 +249,8 @@ void EPPSController::sendQNICReportToNeighbor(bool is_left) {
 
     report->setPartnerQNICAddr((is_left? right_addr : left_addr));
     report->setPartnerQNICIndex(is_left ? right_qnic_index : left_qnic_index);
+
+    report->setCorrections(is_left);
     send(report,"to_router");
 }
 

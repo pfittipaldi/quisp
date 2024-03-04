@@ -8,4 +8,5 @@ packet QNICReport extends Header {
     int partnerQNICAddr;
     int partnerQNICIndex;
     int destQNICIndex;
+    bool corrections;
 }

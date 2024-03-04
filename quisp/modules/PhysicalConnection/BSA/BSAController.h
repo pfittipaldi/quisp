@@ -89,6 +89,7 @@ class BSAController : public cSimpleModule {
   simtime_t speed_of_light_in_channel;  ///< Speed of light in optical fiber (in km per sec).
   utils::ComponentProvider provider;
   bool is_active;
+  bool MSM_is_corrector;
   BellStateAnalyzer* bsa;
 
   // testing and debugging members

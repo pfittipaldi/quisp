@@ -262,11 +262,11 @@ void RuleEngine::MSM_handleRemoteBSM(TiminglessBSAResults * remote_result) {
     auto qnic_index = remote_result->getQnicIndex();
     auto num_local_success = local_result->getSuccessCount();
     auto num_remote_success = remote_result->getSuccessCount();
-    std::set<int>* remote_success_indices = new std::set<int>;
+    std::map<int,int>* remote_success_indices = new std::map<int,int>;
     auto partner_address = local_result->getNeighborAddress();
     auto &emitted_indices = emitted_photon_order_map[{type, qnic_index}];
     for (int i = num_remote_success - 1; i >= 0; i--) {
-        remote_success_indices->insert(remote_result->getSuccessfulPhotonIndices(i));
+        remote_success_indices->insert(std::make_pair(remote_result->getSuccessfulPhotonIndices(i),i));
     }
 
     for (int i = num_local_success - 1; i >= 0; i--) {
@@ -278,13 +278,8 @@ void RuleEngine::MSM_handleRemoteBSM(TiminglessBSAResults * remote_result) {
         if (remote_success_indices->count(emitted_index)) {
             bell_pair_store.insertEntangledQubit(partner_address, qubit_record);
             emitted_indices.erase(iterator);
-            auto correction_operation = local_result->getCorrectionOperationList(i);
-                    if (correction_operation == PauliOperator::X) {
-                      realtime_controller->applyXGate(qubit_record);
-                    } else if (correction_operation == PauliOperator::Z) {
-                      realtime_controller->applyZGate(qubit_record);
-                    } else if (correction_operation == PauliOperator::Y) {
-                      realtime_controller->applyYGate(qubit_record);
+            if (local_result->getCorrections() and local_result->getCorrectionOperationList(i) == remote_result->getCorrectionOperationList(remote_success_indices->at(emitted_index))) {
+                    realtime_controller->applyZGate(qubit_record);
                     }
         }
 }
@@ -336,7 +331,6 @@ void RuleEngine::handleLinkGenerationResult(CombinedBSAresults *bsa_result) {
     std::advance(iterator, emitted_index);
     bell_pair_store.insertEntangledQubit(partner_address, qubit_record);
     emitted_indices.erase(iterator);
-
     auto correction_operation = bsa_result->getCorrectionOperationList(i);
     if (correction_operation == PauliOperator::X) {
       realtime_controller->applyXGate(qubit_record);

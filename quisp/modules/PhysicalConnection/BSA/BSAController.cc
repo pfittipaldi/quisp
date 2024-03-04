@@ -60,6 +60,7 @@ void BSAController::handleMessage(cMessage *msg) {
       right_qnic.type = QNIC_RP;
       right_qnic.parent_node_addr = qnic_report->getPartnerQNICAddr();
       right_qnic.index = qnic_report->getPartnerQNICIndex();
+      MSM_is_corrector = qnic_report->getCorrections();
   }
   if (msg == time_out_message) {
     // P: For satellite links, we need to recalculate this for every pulse train due to variable channel length!
@@ -118,6 +119,7 @@ void BSAController::sendTiminglessMeasurementResults(BatchClickEvent *batch_clic
       rightpk->appendCorrectionOperation(batch_click_msg->getClickResults(index).correction_operation);
       rightpk->setNeighborAddress(left_qnic.parent_node_addr);
     }
+    if (MSM_is_corrector) leftpk->setCorrections(true);
     send(leftpk, "to_router");
     send(rightpk, "to_router");
 }

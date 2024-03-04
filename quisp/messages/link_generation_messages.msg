@@ -53,6 +53,7 @@ packet TiminglessBSAResults extends Header
 	bool is_timingless @getter(isTimingless) @setter(setTimingless);
 	QNIC_type qnic_type @setter(setQnicType)  @getter(getQnicType);
     int qnic_index      @setter(setQnicIndex) @getter(getQnicIndex);
+    bool corrections;
 	}
 
 // Batch MSM experiment, I want a packet with the results and without the timing notification. 
