@@ -258,10 +258,12 @@ void RuleEngine::MSM_storeLocalBSM(TiminglessBSAResults * result) {
 void RuleEngine::MSM_handleRemoteBSM(TiminglessBSAResults * remote_result) {
     TiminglessBSAResults * local_result = MSM_local_result;
 
-    auto type = remote_result->getQnicType();
-    auto qnic_index = remote_result->getQnicIndex();
+    auto type = local_result->getQnicType();
+    auto qnic_index = local_result->getQnicIndex();
     auto num_local_success = local_result->getSuccessCount();
     auto num_remote_success = remote_result->getSuccessCount();
+
+
     std::map<int,int>* remote_success_indices = new std::map<int,int>;
     auto partner_address = local_result->getNeighborAddress();
     auto &emitted_indices = emitted_photon_order_map[{type, qnic_index}];
@@ -278,9 +280,12 @@ void RuleEngine::MSM_handleRemoteBSM(TiminglessBSAResults * remote_result) {
         if (remote_success_indices->count(emitted_index)) {
             bell_pair_store.insertEntangledQubit(partner_address, qubit_record);
             emitted_indices.erase(iterator);
-            if (local_result->getCorrections() and local_result->getCorrectionOperationList(i) == remote_result->getCorrectionOperationList(remote_success_indices->at(emitted_index))) {
+
+            bool same_state = (local_result->getCorrectionOperationList(i) == remote_result->getCorrectionOperationList(remote_success_indices->at(emitted_index)));
+
+            if (local_result->getCorrections() and !same_state) {
                     realtime_controller->applyZGate(qubit_record);
-                    }
+            }
         }
 }
 delete remote_success_indices;

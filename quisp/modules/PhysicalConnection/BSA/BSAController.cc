@@ -113,7 +113,7 @@ void BSAController::sendTiminglessMeasurementResults(BatchClickEvent *batch_clic
     for (int index = 0; index < batch_click_msg->numberOfClicks(); index++) {
       if (!batch_click_msg->getClickResults(index).success) continue;
       leftpk->appendSuccessIndex(index);
-      leftpk->appendCorrectionOperation(PauliOperator::I);
+      leftpk->appendCorrectionOperation(batch_click_msg->getClickResults(index).correction_operation);
       leftpk->setNeighborAddress(right_qnic.parent_node_addr);
       rightpk->appendSuccessIndex(index);
       rightpk->appendCorrectionOperation(batch_click_msg->getClickResults(index).correction_operation);

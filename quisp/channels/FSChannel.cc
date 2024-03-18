@@ -46,7 +46,7 @@ bool FSChannel::checkLOS() {
 
 double FSChannel::getDistanceAtTime(const simtime_t time) {
   recalculateChannelParameters();
-  return dist_par->getPropertyAtTime(time.dbl());
+  return dist_par->getPropertyAtTime(time.dbl())/2;
 }
 
 SimTime FSChannel::getNext_check_time() {
@@ -62,7 +62,7 @@ SimTime FSChannel::getNext_check_time() {
 }
 
 void FSChannel::recalculateChannelParameters() {
-  par("distance").setDoubleValue(dist_par->getPropertyAtTime(simTime().dbl()));
+  par("distance").setDoubleValue(dist_par->getPropertyAtTime(simTime().dbl())/2);
   if (par("CSV_varies_delay").boolValue()) par("delay").setDoubleValue(par("distance").doubleValue() / par("speed_of_light_in_FS").doubleValue());
 }
 }  // namespace quisp::channels
