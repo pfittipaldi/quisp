@@ -163,8 +163,8 @@ double QuantumChannel_FS::calculateLossRate() {
   // hard-coded values from 10.1038/s42005-022-01123-7
   theta_diff = 1.27 * lambda / Dt;
   theta_atm = 2.1 * lambda / r0;
-  attenuation_rate = ((pow(theta_diff, 2) + pow(theta_atm, 2)) / (pow(Dr, 2))) * pow(distance, 2) * Aatm;  // from 10.1038/s42005-022-01123-7
-  loss_rate = 1 - 1 / attenuation_rate;
+  attenuation_rate = ((pow(theta_diff, 2) + pow(theta_atm, 2)) / (pow(Dr, 2))) * pow(distance, 2) * (Aatm);  // from 10.1038/s42005-022-01123-7
+  loss_rate = 1 - 1/attenuation_rate;
 
   // emit(channel_t,1/attenuation_rate);
   // emit(channel_t_dB,10*log10(1/attenuation_rate));

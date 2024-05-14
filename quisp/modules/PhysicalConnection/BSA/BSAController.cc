@@ -249,7 +249,7 @@ simtime_t BSAController::getPredictedTravelTimeFromPort(int port) {
     double current_distance = FS_chl->getDistanceAtTime(simTime());
     simtime_t current_travel_time = SimTime(current_distance / speed_of_light_in_channel);
 
-    double predicted_distance = FS_chl->getDistanceAtTime(simTime() + current_travel_time);
+    double predicted_distance = FS_chl->getDistanceAtTime(simTime() + current_travel_time + time_interval_between_photons * 10);
     double offset = (predicted_distance - current_distance) / speed_of_light_in_channel;
 
     // distance = FS_chl->getDistanceAtTime(simTime());

@@ -72,8 +72,10 @@ void BellStateAnalyzer::handleMessage(cMessage *msg) {
   }
 
   if (photon.from_port == PortNumber::First) {
+    emit(p_arrived,1);
     first_port_records.emplace_back(photon);
   } else {
+    emit(q_arrived,1);
     second_port_records.emplace_back(photon);
   }
   if (!photon.is_last) {
@@ -94,6 +96,7 @@ void BellStateAnalyzer::handleMessage(cMessage *msg) {
 
 void BellStateAnalyzer::processPhotonRecords() {
   auto *batch_click_msg = new BatchClickEvent();
+  clicks=0;
   int number_of_possible_pairs = std::min(first_port_records.size(), second_port_records.size());
   for (int i = 0; i < number_of_possible_pairs; i++) {
     auto p = first_port_records[i];
@@ -101,6 +104,7 @@ void BellStateAnalyzer::processPhotonRecords() {
     if (fabs(p.arrival_time - q.arrival_time) < indistinguishability_window) {
       BSAClickResult res = processIndistinguishPhotons(p, q);
       batch_click_msg->appendClickResults(res);
+      if (res.success) clicks++;
     } else {
       batch_click_msg->appendClickResults({.success = false, .correction_operation = PauliOperator::I});
       discardPhoton(p);
@@ -109,6 +113,7 @@ void BellStateAnalyzer::processPhotonRecords() {
   }
   first_port_records.clear();
   second_port_records.clear();
+  if (clicks!=0) emit(clicks_in_batch,clicks);
   send(batch_click_msg, "to_bsa_controller");
 }
 

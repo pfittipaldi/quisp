@@ -120,6 +120,8 @@ class RuleEngine : public IRuleEngine, public Logger::LoggerBase {
 
   // [Key: qnic_index, Value: qubit_index]
   std::unordered_map<int, MSMInfo> msm_info_map;
+
+  simsignal_t received_swap_result = registerSignal("swapped");
 };
 
 Define_Module(RuleEngine);

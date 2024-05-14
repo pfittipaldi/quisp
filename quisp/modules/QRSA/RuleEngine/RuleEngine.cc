@@ -343,6 +343,7 @@ void RuleEngine::handlePurificationResult(PurificationResult *result) {
 }
 
 void RuleEngine::handleSwappingResult(SwappingResult *result) {
+  emit(received_swap_result,1);
   auto ruleset_id = result->getRulesetId();
   auto shared_rule_tag = result->getSharedRuleTag();
   auto sequence_number = result->getSequenceNumber();

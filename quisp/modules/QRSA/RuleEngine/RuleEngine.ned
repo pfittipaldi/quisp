@@ -23,7 +23,8 @@ simple RuleEngine
         int number_of_qnics_r;
         int number_of_qnics_rp;
         int total_number_of_qnics;
-
+		@signal[swapped](type=int);
+		@statistic[swapped](record=vector);
     gates:
         inout RouterPort;
         inout HardwareMonitorPort;
