@@ -57,9 +57,10 @@ class QuantumChannel_FS : public FSChannel {
   double attenuation_rate = 0;
 
   // statistics
-  //  simsignal_t channel_length = registerSignal("channel_length");
-  //  simsignal_t channel_delay = registerSignal("channel_delay");
-  //  simsignal_t channel_t = registerSignal("channel_t");
+    simtime_t last_emission_time = SIMTIME_ZERO;
+    simsignal_t channel_length = registerSignal("channel_length");
+    simsignal_t channel_delay = registerSignal("channel_delay");
+    simsignal_t channel_t = registerSignal("channel_t");
   //  simsignal_t channel_t_dB = registerSignal("channel_t_dB");
 };
 
@@ -69,7 +70,7 @@ QuantumChannel_FS::QuantumChannel_FS() {}
 
 void QuantumChannel_FS::initialize() {
   FSChannel::initialize();
-  distance = par("distance");
+  distance = par("distance").doubleValueInUnit("m");
   Aatm_CSV = new CSVParser(par("Aatm_CSV"));
   err.loss_rate = calculateLossRate();
   err.x_error_rate = par("channel_x_error_rate");
@@ -154,7 +155,7 @@ void QuantumChannel_FS::validateParameters() {
 }
 
 double QuantumChannel_FS::calculateLossRate() {
-  distance = par("distance");
+  distance = par("distance").doubleValueInUnit("m");
   lambda = par("wavelength");
   Dt = par("transmitter_telescope_diameter");
   Dr = par("receiver_telescope_diameter");
@@ -163,7 +164,7 @@ double QuantumChannel_FS::calculateLossRate() {
   // hard-coded values from 10.1038/s42005-022-01123-7
   theta_diff = 1.27 * lambda / Dt;
   theta_atm = 2.1 * lambda / r0;
-  attenuation_rate = ((pow(theta_diff, 2) + pow(theta_atm, 2)) / (pow(Dr, 2))) * pow(distance, 2) * (Aatm);  // from 10.1038/s42005-022-01123-7
+  attenuation_rate = ((pow(theta_diff, 2) + pow(theta_atm, 2)) / (pow(Dr, 2))) * pow(distance, 2) * (1/Aatm);  // from 10.1038/s42005-022-01123-7
   loss_rate = 1 - 1/attenuation_rate;
 
   // emit(channel_t,1/attenuation_rate);
@@ -184,10 +185,13 @@ void QuantumChannel_FS::recalculateChannelParameters() {
       err.z_error_rate, err.loss_rate, err.z_error_rate, err.y_error_rate, 1 - err.error_rate, err.x_error_rate, err.loss_rate, err.y_error_rate, err.z_error_rate,
       err.x_error_rate, 1 - err.error_rate, err.loss_rate, 0, 0, 0, 0, 1;
   // clang-format on
+   if (simTime() - last_emission_time > SimTime(50,SIMTIME_MS)) {
+       last_emission_time = simTime();
+       emit(channel_length,par("distance").doubleValueInUnit("m"));
+       emit(channel_delay,getDelay().dbl());
+       emit(channel_t,1/attenuation_rate);
+   }
 
-  // emit(channel_length,par("distance").doubleValue());
-  // emit(channel_delay,getDelay());
-  // emit(channel_att,attenuation_rate);
   // emit(channel_att_dB,10*log10(attenuation_rate));
 }
 

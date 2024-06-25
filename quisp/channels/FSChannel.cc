@@ -62,7 +62,7 @@ SimTime FSChannel::getNext_check_time() {
 }
 
 void FSChannel::recalculateChannelParameters() {
-  par("distance").setDoubleValue(dist_par->getPropertyAtTime(simTime().dbl()));
-  if (par("CSV_varies_delay").boolValue()) par("delay").setDoubleValue(par("distance").doubleValue() / par("speed_of_light_in_FS").doubleValue());
+  par("distance").setDoubleValue(dist_par->getPropertyAtTime(simTime().dbl())/1000);
+  par("delay").setDoubleValue(par("distance").doubleValueInUnit("m") / par("speed_of_light_in_FS").doubleValueInUnit("m"));
 }
 }  // namespace quisp::channels

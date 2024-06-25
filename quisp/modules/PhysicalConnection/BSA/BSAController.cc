@@ -243,7 +243,7 @@ simtime_t BSAController::getPredictedTravelTimeFromPort(int port) {
   }
 
   if (FSChannel *FS_chl = dynamic_cast<FSChannel *>(channel)) {
-    speed_of_light_in_channel = FS_chl->par("speed_of_light_in_FS").doubleValue();  // km/sec
+    speed_of_light_in_channel = FS_chl->par("speed_of_light_in_FS").doubleValueInUnit("m");  // km/sec
 
     // I need to predict where the satellite is going to be when emission starts. If I send the notification now, that's distance(simTime() + travel_time).
     double current_distance = FS_chl->getDistanceAtTime(simTime());
@@ -276,7 +276,7 @@ simtime_t BSAController::getCurrentTravelTimeFromPort(int port) {
   }
 
   if (FSChannel *FS_chl = dynamic_cast<FSChannel *>(channel)) {
-    speed_of_light_in_channel = FS_chl->par("speed_of_light_in_FS").doubleValue();  // km/sec
+    speed_of_light_in_channel = FS_chl->par("speed_of_light_in_FS").doubleValueInUnit("m");  // km/sec
     distance = FS_chl->getDistanceAtTime(simTime());
 
   } else {

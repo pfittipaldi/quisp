@@ -148,7 +148,6 @@ network Simple_MM_SAT
         EndNode2: QNode_Sat {
             address = 2;
             is_satellite = false;
-            is_initiator = true;
             node_type = "EndNode";
             @display("i=COMP;p=295,201,m,5,60,60");
         }
@@ -236,6 +235,42 @@ network three_node_MM
 
         EndNode1.quantum_port++ <--> QuantumChannel {  distance = 0.5km; } <--> Repeater.quantum_port_receiver++;
         Repeater.quantum_port++ <--> QuantumChannel {  distance = 0.5km; } <--> EndNode2.quantum_port_receiver++;
+}
+
+network three_node_MM_Sat
+{
+    parameters:
+        **.speed_of_light_in_fiber = 205336.986301 km;
+        **.speed_of_light_in_FS = 299792.458 km;
+        @display("bgb=541,254");
+    submodules:
+        backend: Backend;
+        logger: Logger;
+        sharedResource: SharedResource {
+            @display("p=266,203");
+        }
+        EndNode1: QNode_Sat {
+            address = 10;
+            node_type = "EndNode";
+            @display("i=COMP;p=56,202");
+        }
+        EndNode2: QNode_Sat {
+            address = 5;
+            node_type = "EndNode";
+            @display("i=COMP;p=473,202");
+        }
+        Repeater: QNode_Sat {
+            address = 3;
+            node_type = "Repeater";
+            is_satellite = true;
+            @display("i=REP1G;p=266,40");
+        }
+    connections:
+        EndNode1.port++ <--> ClassicalChannel_FS {  distance = 500km; } <--> Repeater.port++;
+        Repeater.port++ <--> ClassicalChannel_FS {  distance = 500km; } <--> EndNode2.port++;
+
+        EndNode1.quantum_port_receiver++ <--> QuantumChannel_FS {  distance = 500km; } <--> Repeater.quantum_port++;
+        Repeater.quantum_port++ <--> QuantumChannel_FS {  distance = 500km; } <--> EndNode2.quantum_port_receiver++;
 }
 
 network three_node_MSM
