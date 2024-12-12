@@ -483,6 +483,7 @@ if (search != connection_teardown_messages.end()) { //This node is in charge of 
 auto messages_to_send = search->second;
 for (auto msg : messages_to_send) {
         send(msg->dup(), "RouterPort$o");
+        delete msg;
       }
       connection_teardown_messages.erase(search->first);
     }
@@ -491,9 +492,9 @@ for (auto msg : messages_to_send) {
 
 void ConnectionManager::handleTeardownMessage(messages::ConnectionTeardown *td) {
   auto qnic_addresses = reservation_register.getReservedQnics(td->getRuleSet_id());
-  reservation_register.deleteReservationByRulesetId(td->getRuleSet_id());
   requestTerminationOfSwappingRulesets(td->getRuleSet_id());
   sendReleaseResources(qnic_addresses);
+  reservation_register.deleteReservationByRulesetId(td->getRuleSet_id());
   for (int qnic_addr : qnic_addresses) {
     popApplicationRequest(qnic_addr);
   }
@@ -539,6 +540,7 @@ void ConnectionManager::sendReleaseResources(std::set<int> qnic_addresses) {
     for (int qnic_addr : qnic_addresses) {
         rel->appendQnicAddr(qnic_addr);
     }
+    rel->setRuleSet_id(reservation_register.getReservingRuleset(*(qnic_addresses.begin())));
     send(rel,"RouterPort$o");
 }
 }  // namespace quisp::modules

@@ -150,6 +150,12 @@ void RuleEngine::handleMessage(cMessage *msg) {
   } else if (auto *pk = dynamic_cast<LinkTomographyRuleSet *>(msg)) {
     auto *ruleset = pk->getRuleSet();
     runtimes.acceptRuleSet(ruleset->construct());
+    auto partners = runtimes.findById(ruleset->ruleset_id)->partners;
+        std::set<int> partners_cast;
+        for (auto partner : partners) {
+            partners_cast.insert(partner.val);
+        }
+        partners_register.emplace(ruleset->ruleset_id,partners_cast);
   } else if (auto *pkt = dynamic_cast<PurificationResult *>(msg)) {
     handlePurificationResult(pkt);
   } else if (auto *pkt = dynamic_cast<SwappingResult *>(msg)) {
@@ -161,24 +167,24 @@ void RuleEngine::handleMessage(cMessage *msg) {
     RuleSet ruleset(0, 0);
     ruleset.deserialize_json(serialized_ruleset);
     runtimes.acceptRuleSet(ruleset.construct());
+    auto partners = runtimes.findById(ruleset.ruleset_id)->partners;
+    std::set<int> partners_cast;
+    for (auto partner : partners) {
+        partners_cast.insert(partner.val);
+    }
+    partners_register.emplace(ruleset.ruleset_id,partners_cast);
   } else if (auto *pkt = dynamic_cast<InternalRuleSetForwarding_Application *>(msg)) {
     if (pkt->getApplication_type() != 0) error("This application is not recognized yet");
     auto serialized_ruleset = pkt->getRuleSet();
     RuleSet ruleset(0, 0);
     ruleset.deserialize_json(serialized_ruleset);
     runtimes.acceptRuleSet(ruleset.construct());
-  } else if (auto *pkt = dynamic_cast<InternalRuleSetForwarding *>(msg)) {
-    // add actual process
-    auto serialized_ruleset = pkt->getRuleSet();
-    RuleSet ruleset(0, 0);
-    ruleset.deserialize_json(serialized_ruleset);
-    runtimes.acceptRuleSet(ruleset.construct());
-  } else if (auto *pkt = dynamic_cast<InternalRuleSetForwarding_Application *>(msg)) {
-    if (pkt->getApplication_type() != 0) error("This application is not recognized yet");
-    auto serialized_ruleset = pkt->getRuleSet();
-    RuleSet ruleset(0, 0);
-    ruleset.deserialize_json(serialized_ruleset);
-    runtimes.acceptRuleSet(ruleset.construct());
+    auto partners = runtimes.findById(ruleset.ruleset_id)->partners;
+        std::set<int> partners_cast;
+        for (auto partner : partners) {
+            partners_cast.insert(partner.val);
+        }
+        partners_register.emplace(ruleset.ruleset_id,partners_cast);
   } else if (auto *pkt = dynamic_cast<StopEmitting *>(msg)) {
     handleStopEmitting(pkt);
   } else if (auto *pkt = dynamic_cast<RequestRulesetTermination *>(msg)) {
@@ -413,17 +419,22 @@ std::pair<QNIC_type,int> RuleEngine::qnicAddrToQnicTypeAndIndex(int qnic_addr) {
 
 void RuleEngine::releaseResources(ReleaseResources* rel) {
     int number_of_qnics_to_release = rel->getNumberOfQnicAddrs();
-    for (int it = 0; it < number_of_qnics_to_release; it++) {
-    auto [qnic_type, qnic_index] = qnicAddrToQnicTypeAndIndex(rel->getQnicAddr(it));
-    stopOnGoingPhotonEmission(qnic_type,qnic_index);
-    auto &emitted_indices = emitted_photon_order_map[{qnic_type, qnic_index}];
-      for (auto qubit_index : emitted_indices) {
-        realtime_controller->ReInitialize_StationaryQubit(qnic_index, qubit_index, qnic_type, false);
-        qnic_store->setQubitBusy(qnic_type, qnic_index, qubit_index, false);
-        if (qnic_store->getQubitRecord(qnic_type, qnic_index, qubit_index)->isAllocated())  qnic_store->getQubitRecord(qnic_type, qnic_index, qubit_index)->setAllocated(false);
-      }
-      emitted_indices.clear();
+    auto &partners = partners_register.at(rel->getRuleSet_id());
+    for (int itr_qnicaddr = 0; itr_qnicaddr < number_of_qnics_to_release; itr_qnicaddr++) {
+        auto [qnic_type, qnic_index] = qnicAddrToQnicTypeAndIndex(rel->getQnicAddr(itr_qnicaddr));
+        stopOnGoingPhotonEmission(qnic_type,qnic_index);
+        freeFailedEntanglementAttemptQubits(qnic_type,qnic_index);
+        for (auto partner_addr : partners) {
+                   auto range = bell_pair_store.getBellPairsRange(qnic_type, qnic_index, partner_addr);
+                    for (auto it = range.first; it != range.second; ++it) {
+                     auto qubit_record = it->second;
+                     if (qubit_record->isAllocated()) {
+                       qubit_record->setAllocated(false);
+                     }
+                   }
+                 }
     }
+    partners_register.erase(rel->getRuleSet_id());
 }
 
 
