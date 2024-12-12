@@ -539,8 +539,9 @@ void ConnectionManager::sendReleaseResources(std::set<int> qnic_addresses) {
     rel->setDestAddr(my_address);
     for (int qnic_addr : qnic_addresses) {
         rel->appendQnicAddr(qnic_addr);
+        rel->setRuleSet_id(reservation_register.getReservingRuleset(qnic_addr));
+
     }
-    rel->setRuleSet_id(reservation_register.getReservingRuleset(*(qnic_addresses.begin())));
     send(rel,"RouterPort$o");
 }
 }  // namespace quisp::modules

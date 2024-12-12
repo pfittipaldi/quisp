@@ -418,6 +418,7 @@ std::pair<QNIC_type,int> RuleEngine::qnicAddrToQnicTypeAndIndex(int qnic_addr) {
 }
 
 void RuleEngine::releaseResources(ReleaseResources* rel) {
+    if (runtimes.findById(rel->getRuleSet_id()) != nullptr) throw cRuntimeError("ERROR: Attempting to release resources allocated to not-yet-terminated ruleset!");
     int number_of_qnics_to_release = rel->getNumberOfQnicAddrs();
     auto &partners = partners_register.at(rel->getRuleSet_id());
     for (int itr_qnicaddr = 0; itr_qnicaddr < number_of_qnics_to_release; itr_qnicaddr++) {

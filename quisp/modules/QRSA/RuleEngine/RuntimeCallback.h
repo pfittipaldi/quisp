@@ -180,6 +180,11 @@ struct RuntimeCallback : public quisp::runtime::Runtime::ICallBack {
     return ss.str();
   }
 
+  void updateQubitPartner(IQubitRecord *const qubit_rec, QNodeAddr new_partner_addr) override {
+    rule_engine->bell_pair_store.eraseQubit(qubit_rec);
+    rule_engine->bell_pair_store.insertEntangledQubit(new_partner_addr.val, qubit_rec);
+  }
+
   RuleEngine *rule_engine;
   utils::ComponentProvider &provider;
   int right_qubit_index = -1;
